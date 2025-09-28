@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-android-edge-to-edge"
+        version="1.0.4">
+
+  <name>AndroidEdgeToEdge</name>
+  <description>Cordova plugin: Edge-to-edge support for Android 15 (API 35)</description>
+  <license>MIT</license>
+  <keywords>cordova,android,edge-to-edge,insets</keywords>
+  <repo>https://github.com/squareetlabs/cordova-plugin-android-edge-to-edge</repo>
+
+  <engines>
+    <engine name="cordova" version=">=10.0.0" />
+  </engines>
+
+  <js-module src="www/edgeToEdge.js" name="AndroidEdgeToEdge">
+    <clobbers target="AndroidEdgeToEdge" />
+  </js-module>
+
+  <platform name="android">
+    <!-- Register the native feature in config.xml so Cordova can route exec() calls -->
+    <config-file target="res/xml/config.xml" parent="/*">
+      <feature name="AndroidEdgeToEdge">
+        <param name="android-package" value="com.squareetlabs.cordova.edge2edge.AndroidEdgeToEdge"/>
+        <param name="onload" value="false"/>
+      </feature>
+    </config-file>
+
+    <!-- Java source -->
+    <source-file src="src/android/AndroidEdgeToEdge.java"
+                 target-dir="src/com/squareetlabs/cordova/edge2edge"/>
+  </platform>
+</plugin>

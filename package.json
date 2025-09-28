@@ -1,0 +1,68 @@
+{
+  "name": "@squareetlabs/cordova-plugin-android-edge-to-edge",
+  "version": "1.0.12",
+  "description": "Edge-to-edge support for Android 15 (API 35) in Cordova and Ionic 3 apps. Handles system bars transparency, WindowInsets, and safe areas to avoid toolbar overlap.",
+  "license": "MIT",
+  "author": {
+    "name": "Squareetlabs"
+  },
+  "contributors": [
+    {
+      "name": "Alberto Rial Barreiro",
+      "email": "alberto@squareet.com",
+      "url": "https://squareet.com"
+    },
+    {
+      "name": "Jacobo Cantorna Cigarrán",
+      "email": "jacobo@squareet.com.com",
+      "url": "https://squareet.com"
+    }
+  ],
+  "homepage": "https://github.com/squareetlabs/cordova-plugin-android-edge-to-edge#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/squareetlabs/cordova-plugin-android-edge-to-edge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/squareetlabs/cordova-plugin-android-edge-to-edge/issues"
+  },
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-android",
+    "android",
+    "edge-to-edge",
+    "ionic",
+    "ionic-native",
+    "ionic-angular",
+    "ionic-v3",
+    "insets",
+    "statusbar",
+    "navigationbar",
+    "android-15",
+    "api-35"
+  ],
+  "engines": {
+    "cordovaDependencies": {
+      "1.0.0": {
+        "cordova": ">100"
+      }
+    }
+  },
+  "cordova": {
+    "id": "cordova-plugin-android-edge-to-edge",
+    "platforms": [
+      "android"
+    ]
+  },
+  "files": [
+    "plugin.xml",
+    "README.md",
+    "LICENSE",
+    "www/",
+    "src/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
