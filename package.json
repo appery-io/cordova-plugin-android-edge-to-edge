@@ -1,6 +1,6 @@
 {
   "name": "@squareetlabs/cordova-plugin-android-edge-to-edge",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Edge-to-edge support for Android 15 (API 35) in Cordova and Ionic 3 apps. Handles system bars transparency, WindowInsets, and safe areas to avoid toolbar overlap.",
   "license": "MIT",
   "author": {
