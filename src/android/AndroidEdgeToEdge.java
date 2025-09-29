@@ -26,6 +26,7 @@ package com.squareetlabs.cordova.edge2edge;
 import android.graphics.Color;
 import android.os.Build;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.app.Activity;
 
@@ -33,6 +34,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.view.ViewCompat;
+import androidx.core.graphics.Insets;
 
 import org.apache.cordova.*;
 import org.json.JSONArray;
@@ -58,15 +60,19 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
     private JSONArray ignoredPackages;
     
     /**
-     * Almacena los últimos valores de insets enviados para evitar actualizaciones redundantes.
+     * Indica si el modo edge-to-edge está habilitado.
      */
-    private int lastTopInset = -1;
-    private int lastBottomInset = -1;
+    private boolean enabled = false;
+    
+    /**
+     * Color de fondo para el contenedor de la WebView.
+     */
+    private int backgroundColor = Color.WHITE;
 
     /**
      * Método principal que ejecuta las acciones solicitadas desde JavaScript.
      * 
-     * @param action Nombre de la acción a ejecutar: "enable", "getInsets" o "subscribeInsets"
+     * @param action Nombre de la acción a ejecutar: "enable", "getInsets", "subscribeInsets", "checkInsets", "disable"
      * @param args Argumentos JSON pasados desde JavaScript
      * @param callbackContext Contexto de callback para devolver resultados a JavaScript
      * @return true si la acción fue reconocida y procesada, false en caso contrario
@@ -86,6 +92,17 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
                 boolean lightStatus = opts != null && opts.optBoolean("lightStatusBar", true);
                 // Determina si se deben usar iconos claros en la barra de navegación (por defecto: true)
                 boolean lightNav = opts != null && opts.optBoolean("lightNavigationBar", true);
+                
+                // Obtiene el color de fondo (opcional)
+                if (opts != null && opts.has("backgroundColor")) {
+                    try {
+                        String colorStr = opts.getString("backgroundColor");
+                        this.backgroundColor = Color.parseColor(colorStr);
+                    } catch (Exception e) {
+                        // Si hay un error, usamos el color por defecto (blanco)
+                    }
+                }
+                
                 // Obtiene la lista de paquetes a ignorar (si existe)
                 if (opts != null && opts.has("ignoredPackages")) {
                     try {
@@ -124,19 +141,38 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
                         controller.setAppearanceLightStatusBars(lightStatus);
                         controller.setAppearanceLightNavigationBars(lightNav);
                     }
-                    // Configura un listener para detectar cambios en los insets del sistema
-                    ViewCompat.setOnApplyWindowInsetsListener(decorView, (v, insets) -> {
-                        WindowInsetsCompat w = insets;
-                        // Obtiene el tamaño del inset superior (barra de estado)
-                        int top = w.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                        // Obtiene el tamaño del inset inferior (barra de navegación)
-                        int bottom = w.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                        // Envía los valores de insets al código JavaScript
-                        sendInsetsToJS(top, bottom);
-                        return insets;
-                    });
-                    // Solicita que se apliquen los insets
-                    ViewCompat.requestApplyInsets(decorView);
+                    
+                    // Establece el color de fondo del contenedor de la WebView
+                    setBackgroundColor(this.backgroundColor);
+                    
+                    // Aplica los insets a la WebView
+                    applyInsets();
+                    
+                    // Marca como habilitado
+                    enabled = true;
+                    
+                    // Envía respuesta de éxito al callback de JavaScript
+                    callbackContext.success();
+                });
+                return true;
+            }
+            case "disable": {
+                activity.runOnUiThread(() -> {
+                    // Deshabilita el modo edge-to-edge
+                    WindowCompat.setDecorFitsSystemWindows(window, true);
+                    
+                    // Restaura los colores de las barras de estado y navegación
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        window.setStatusBarColor(Color.BLACK);
+                        window.setNavigationBarColor(Color.BLACK);
+                    }
+                    
+                    // Elimina los insets
+                    removeInsets();
+                    
+                    // Marca como deshabilitado
+                    enabled = false;
+                    
                     // Envía respuesta de éxito al callback de JavaScript
                     callbackContext.success();
                 });
@@ -145,18 +181,7 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
             case "getInsets": {
                 // Obtiene los valores actuales de insets del sistema
                 activity.runOnUiThread(() -> {
-                    // Obtiene los insets de la ventana raíz
-                    WindowInsetsCompat w = ViewCompat.getRootWindowInsets(decorView);
-                    int top = 0, bottom = 0;
-                    if (w != null) {
-                        // Obtiene el tamaño del inset superior (barra de estado)
-                        top = w.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                        // Obtiene el tamaño del inset inferior (barra de navegación)
-                        bottom = w.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    }
-                    // Crea un objeto JSON con los valores de insets
-                    JSONObject res = new JSONObject();
-                    try { res.put("top", top); res.put("bottom", bottom); } catch (JSONException ignored) {}
+                    JSONObject res = getCurrentInsetsAsJson();
                     // Envía la respuesta con los valores de insets al callback de JavaScript
                     callbackContext.success(res);
                 });
@@ -171,24 +196,22 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
                 pr.setKeepCallback(true);
                 // Envía el resultado inicial al callback de JavaScript
                 callbackContext.sendPluginResult(pr);
+                
+                // Envía los insets actuales inmediatamente
+                activity.runOnUiThread(() -> {
+                    JSONObject res = getCurrentInsetsAsJson();
+                    notifyInsetsToJS(res);
+                });
                 return true;
             }
             case "checkInsets": {
                 // Verifica y actualiza los insets actuales
                 activity.runOnUiThread(() -> {
-                    // Obtiene los insets de la ventana raíz
-                    WindowInsetsCompat w = ViewCompat.getRootWindowInsets(decorView);
-                    int top = 0, bottom = 0;
-                    if (w != null) {
-                        // Obtiene el tamaño del inset superior (barra de estado)
-                        top = w.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                        // Obtiene el tamaño del inset inferior (barra de navegación)
-                        bottom = w.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    }
-                    // Envía los insets al código JavaScript
-                    sendInsetsToJS(top, bottom);
+                    // Aplica los insets a la WebView
+                    applyInsets();
+                    
                     // Envía respuesta de éxito al callback de JavaScript
-                    callbackContext.success();
+                    callbackContext.success(getCurrentInsetsAsJson());
                 });
                 return true;
             }
@@ -230,12 +253,31 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
     }
     
     /**
-     * Envía los valores de insets al código JavaScript y actualiza las variables CSS.
+     * Obtiene los insets actuales como un objeto JSON.
      * 
-     * @param top Altura en píxeles del inset superior (barra de estado)
-     * @param bottom Altura en píxeles del inset inferior (barra de navegación)
+     * @return JSONObject con los valores de insets (top, bottom, left, right)
      */
-    private void sendInsetsToJS(int top, int bottom) {
+    private JSONObject getCurrentInsetsAsJson() {
+        JSONObject res = new JSONObject();
+        try {
+            View webView = this.webView.getView();
+            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) webView.getLayoutParams();
+            res.put("top", layoutParams.topMargin);
+            res.put("bottom", layoutParams.bottomMargin);
+            res.put("left", layoutParams.leftMargin);
+            res.put("right", layoutParams.rightMargin);
+        } catch (JSONException ignored) {
+            // Ignorar errores al crear el objeto JSON
+        }
+        return res;
+    }
+    
+    /**
+     * Notifica los insets al código JavaScript.
+     * 
+     * @param insets JSONObject con los valores de insets
+     */
+    private void notifyInsetsToJS(JSONObject insets) {
         // Verifica si el paquete actual debe ser ignorado
         if (shouldIgnoreCurrentPackage()) {
             return;
@@ -243,23 +285,132 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
         
         // Si hay un callback registrado para eventos de insets, envía los valores actualizados
         if (insetsEventCallback != null) {
-            JSONObject res = new JSONObject();
-            try { res.put("top", top); res.put("bottom", bottom); } catch (JSONException ignored) {}
             // Crea un resultado con los datos de insets
-            PluginResult pr = new PluginResult(PluginResult.Status.OK, res);
+            PluginResult pr = new PluginResult(PluginResult.Status.OK, insets);
             // Mantiene el callback activo para futuras actualizaciones
             pr.setKeepCallback(true);
             // Envía el resultado al callback de JavaScript
             insetsEventCallback.sendPluginResult(pr);
         }
         
-        // Actualiza las variables CSS para que el diseño web pueda adaptarse a los insets
-        String js =
-            "(function(){"
-          + "document.documentElement.style.setProperty('--cordova-safe-area-inset-top', '" + top + "px');"
-          + "document.documentElement.style.setProperty('--cordova-safe-area-inset-bottom', '" + bottom + "px');"
-          + "})();";
-        // Ejecuta el código JavaScript en la WebView
-        this.webView.getEngine().evaluateJavascript(js, null);
+        try {
+            // Actualiza las variables CSS para que el diseño web pueda adaptarse a los insets
+            int top = insets.getInt("top");
+            int bottom = insets.getInt("bottom");
+            int left = insets.getInt("left");
+            int right = insets.getInt("right");
+            
+            String js =
+                "(function(){"
+              + "document.documentElement.style.setProperty('--cordova-safe-area-inset-top', '" + top + "px');"
+              + "document.documentElement.style.setProperty('--cordova-safe-area-inset-bottom', '" + bottom + "px');"
+              + "document.documentElement.style.setProperty('--cordova-safe-area-inset-left', '" + left + "px');"
+              + "document.documentElement.style.setProperty('--cordova-safe-area-inset-right', '" + right + "px');"
+              + "})();";
+            // Ejecuta el código JavaScript en la WebView
+            this.webView.getEngine().evaluateJavascript(js, null);
+        } catch (JSONException ignored) {
+            // Ignorar errores al leer los valores del objeto JSON
+        }
+    }
+    
+    /**
+     * Aplica los insets a la WebView.
+     */
+    private void applyInsets() {
+        View webView = this.webView.getView();
+        
+        // Obtiene los insets actuales
+        WindowInsetsCompat currentInsets = ViewCompat.getRootWindowInsets(webView);
+        if (currentInsets != null) {
+            // Obtiene los insets de las barras del sistema y recortes de pantalla
+            Insets systemBarsInsets = currentInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            
+            // Obtiene los insets del teclado
+            Insets imeInsets = currentInsets.getInsets(WindowInsetsCompat.Type.ime());
+            boolean keyboardVisible = currentInsets.isVisible(WindowInsetsCompat.Type.ime());
+            
+            // Aplica los insets a la WebView
+            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) webView.getLayoutParams();
+            
+            // Aplica el inset inferior apropiado: usa el inset del teclado si está visible, de lo contrario el inset de la barra del sistema
+            mlp.bottomMargin = keyboardVisible ? imeInsets.bottom : systemBarsInsets.bottom;
+            
+            // Establece los otros márgenes usando los insets de las barras del sistema
+            mlp.topMargin = systemBarsInsets.top;
+            mlp.leftMargin = systemBarsInsets.left;
+            mlp.rightMargin = systemBarsInsets.right;
+            
+            webView.setLayoutParams(mlp);
+            
+            // Notifica los insets al código JavaScript
+            notifyInsetsToJS(getCurrentInsetsAsJson());
+        }
+        
+        // Configura un listener para detectar cambios en los insets
+        ViewCompat.setOnApplyWindowInsetsListener(webView, (v, windowInsets) -> {
+            // Obtiene los insets de las barras del sistema y recortes de pantalla
+            Insets systemBarsInsets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            
+            // Obtiene los insets del teclado
+            Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            boolean keyboardVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime());
+            
+            // Aplica los insets a la WebView
+            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            
+            // Aplica el inset inferior apropiado: usa el inset del teclado si está visible, de lo contrario el inset de la barra del sistema
+            mlp.bottomMargin = keyboardVisible ? imeInsets.bottom : systemBarsInsets.bottom;
+            
+            // Establece los otros márgenes usando los insets de las barras del sistema
+            mlp.topMargin = systemBarsInsets.top;
+            mlp.leftMargin = systemBarsInsets.left;
+            mlp.rightMargin = systemBarsInsets.right;
+            
+            v.setLayoutParams(mlp);
+            
+            // Notifica los insets al código JavaScript
+            notifyInsetsToJS(getCurrentInsetsAsJson());
+            
+            return WindowInsetsCompat.CONSUMED;
+        });
+    }
+    
+    /**
+     * Elimina los insets de la WebView.
+     */
+    private void removeInsets() {
+        View webView = this.webView.getView();
+        
+        // Restablece los márgenes
+        ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) webView.getLayoutParams();
+        mlp.topMargin = 0;
+        mlp.leftMargin = 0;
+        mlp.rightMargin = 0;
+        mlp.bottomMargin = 0;
+        webView.setLayoutParams(mlp);
+        
+        // Elimina el listener de insets
+        ViewCompat.setOnApplyWindowInsetsListener(webView, null);
+        
+        // Notifica los insets al código JavaScript
+        notifyInsetsToJS(getCurrentInsetsAsJson());
+    }
+    
+    /**
+     * Establece el color de fondo del contenedor de la WebView.
+     * 
+     * @param color Color en formato ARGB
+     */
+    private void setBackgroundColor(int color) {
+        View webView = this.webView.getView();
+        ViewGroup parent = (ViewGroup) webView.getParent();
+        if (parent != null) {
+            parent.setBackgroundColor(color);
+        }
     }
 }
