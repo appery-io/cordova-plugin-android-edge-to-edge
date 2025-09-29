@@ -40,52 +40,127 @@ document.addEventListener('deviceready', async () => {
 ```
 
 ## Example Usage in Ionic 3
-```js
-if (!isUndefined((<any>window).AndroidEdgeToEdge)) {
-  (<any>window).AndroidEdgeToEdge.enable({
-    lightStatusBar: true, 
-    lightNavigationBar: true,
-    backgroundColor: '#FFFFFF'
-  });
-  
-  (<any>window).AndroidEdgeToEdge.subscribeInsets(({top, bottom, left, right}) => {
-    const header = document.getElementsByClassName('header').item(0) as HTMLElement | null;
-    const footer = document.getElementsByClassName('footer').item(document.getElementsByClassName('footer').length - 1) as HTMLElement | null;
-    const appRoot = document.getElementsByClassName('app-root').item(0) as HTMLElement | null;
-    
-    if (header && footer && appRoot) {
-      const headerHeightNum = parseFloat(getComputedStyle(header).height) || 0;
-      const footerHeightNum = parseFloat(getComputedStyle(footer).height) || 0;
-      const offsetHeader = top - headerHeightNum;
-      const offsetFooter = bottom + footerHeightNum;
-      const offsetHeaderPx = `${offsetHeader}px`;
-      const offsetFooterPx = `${offsetFooter}px`;
-      const totalOffset = `${offsetHeader + offsetFooter}px`;
-      footer.style.bottom = offsetFooterPx;
-      appRoot.style.top = offsetHeaderPx;
-      appRoot.style.bottom = offsetFooterPx;
-      appRoot.style.height = `calc(100% - ${totalOffset})`;
-      console.log('Full computed');
-    } else if (header && appRoot) {
-      const headerHeightNum = parseFloat(getComputedStyle(header).height) || 0;
-      const offsetHeader = top - headerHeightNum;
-      const offsetHeaderPx = `${offsetHeader}px`;
-      appRoot.style.top = offsetHeaderPx;
-      appRoot.style.height = `calc(100% - ${offsetHeaderPx})`;
-      console.log('Header computed');
-    } else if (footer && appRoot) {
-      const footerHeightNum = parseFloat(getComputedStyle(footer).height) || 0;
-      const offsetFooter = bottom + footerHeightNum;
-      const offsetFooterPx = `${offsetFooter}px`;
-      footer.style.bottom = offsetFooterPx;
-      appRoot.style.bottom = offsetFooterPx;
-      appRoot.style.height = `calc(100% - ${offsetFooterPx})`;
-      console.log('Footer computed');
-    } else if (appRoot) {
-      console.log('None computed');
-      appRoot.style.height = '100%';
+```typescript
+// Importar en app.component.ts o el componente principal
+import { Platform } from 'ionic-angular';
+
+@Component({
+  templateUrl: 'app.html'
+})
+export class MyApp {
+  constructor(platform: Platform) {
+    platform.ready().then(() => {
+      this.setupEdgeToEdge();
+    });
+  }
+
+  private setupEdgeToEdge() {
+    // Verificar si el plugin está disponible
+    if (typeof (<any>window).AndroidEdgeToEdge !== 'undefined') {
+      // Habilitar el modo edge-to-edge
+      (<any>window).AndroidEdgeToEdge.enable({
+        lightStatusBar: true,
+        lightNavigationBar: true,
+        backgroundColor: '#FFFFFF',
+        ignoredPackages: ['org.apache.cordova.camera']
+      }).then(() => {
+        console.log('Edge-to-edge mode enabled');
+      }).catch(err => {
+        console.error('Error enabling edge-to-edge mode:', err);
+      });
+
+      // Suscribirse a los cambios de insets
+      (<any>window).AndroidEdgeToEdge.subscribeInsets(({top, bottom, left, right}) => {
+        // Obtener referencias a los elementos principales
+        const header = document.getElementsByClassName('header').item(0) as HTMLElement | null;
+        const footer = document.getElementsByClassName('footer').item(document.getElementsByClassName('footer').length - 1) as HTMLElement | null;
+        const appRoot = document.getElementsByClassName('app-root').item(0) as HTMLElement | null;
+        const content = document.getElementsByClassName('scroll-content').item(0) as HTMLElement | null;
+        
+        // Aplicar insets según los elementos disponibles
+        if (header && footer && appRoot) {
+          // Caso: Tenemos header y footer
+          const headerHeightNum = parseFloat(getComputedStyle(header).height) || 0;
+          const footerHeightNum = parseFloat(getComputedStyle(footer).height) || 0;
+          
+          // Calcular offsets
+          const offsetHeader = Math.max(0, top - headerHeightNum);
+          const offsetFooter = Math.max(0, bottom - footerHeightNum);
+          
+          // Aplicar estilos
+          header.style.paddingTop = `${top}px`;
+          header.style.paddingLeft = `${left}px`;
+          header.style.paddingRight = `${right}px`;
+          
+          footer.style.paddingBottom = `${bottom}px`;
+          footer.style.paddingLeft = `${left}px`;
+          footer.style.paddingRight = `${right}px`;
+          
+          // Ajustar el contenido principal
+          if (content) {
+            content.style.paddingLeft = `${left}px`;
+            content.style.paddingRight = `${right}px`;
+          }
+          
+          console.log('Insets applied to header and footer');
+        } else if (header && appRoot) {
+          // Caso: Solo tenemos header
+          header.style.paddingTop = `${top}px`;
+          header.style.paddingLeft = `${left}px`;
+          header.style.paddingRight = `${right}px`;
+          
+          if (content) {
+            content.style.paddingLeft = `${left}px`;
+            content.style.paddingRight = `${right}px`;
+            content.style.paddingBottom = `${bottom}px`;
+          }
+          
+          console.log('Insets applied to header');
+        } else if (footer && appRoot) {
+          // Caso: Solo tenemos footer
+          footer.style.paddingBottom = `${bottom}px`;
+          footer.style.paddingLeft = `${left}px`;
+          footer.style.paddingRight = `${right}px`;
+          
+          if (content) {
+            content.style.paddingLeft = `${left}px`;
+            content.style.paddingRight = `${right}px`;
+            content.style.paddingTop = `${top}px`;
+          }
+          
+          console.log('Insets applied to footer');
+        } else if (appRoot) {
+          // Caso: Solo tenemos el contenedor principal
+          if (content) {
+            content.style.paddingTop = `${top}px`;
+            content.style.paddingBottom = `${bottom}px`;
+            content.style.paddingLeft = `${left}px`;
+            content.style.paddingRight = `${right}px`;
+          }
+          
+          console.log('Insets applied to content');
+        }
+      });
+      
+      // Verificar insets cuando cambia la orientación
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          (<any>window).AndroidEdgeToEdge.checkInsets().then(insets => {
+            console.log('Insets updated after orientation change:', insets);
+          });
+        }, 300);
+      });
     }
-  });
+  }
+  
+  // Método para deshabilitar edge-to-edge si es necesario
+  private disableEdgeToEdge() {
+    if (typeof (<any>window).AndroidEdgeToEdge !== 'undefined') {
+      (<any>window).AndroidEdgeToEdge.disable().then(() => {
+        console.log('Edge-to-edge mode disabled');
+      });
+    }
+  }
 }
 ```
 
