@@ -71,6 +71,17 @@ var AndroidEdgeToEdge = {
     return new Promise(function (resolve, reject) {
       exec(resolve, reject, "AndroidEdgeToEdge", "checkInsets", []);
     });
+  },
+  
+  /**
+   * Cambia el color de fondo del contenedor de la WebView
+   * @param {string} color - Color en formato CSS (#RRGGBB o #AARRGGBB)
+   * @returns {Promise<void>} Promesa que se resuelve cuando se cambia el color de fondo
+   */
+  setBackgroundColor: function (color) {
+    return new Promise(function (resolve, reject) {
+      exec(resolve, reject, "AndroidEdgeToEdge", "setBackgroundColor", [color]);
+    });
   }
 };
 

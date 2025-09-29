@@ -85,6 +85,22 @@ public class AndroidEdgeToEdge extends CordovaPlugin {
         View decorView = window.getDecorView();
 
         switch (action) {
+            case "setBackgroundColor": {
+                // Obtiene el color de fondo
+                String colorStr = args.optString(0, "#FFFFFF");
+                try {
+                    int color = Color.parseColor(colorStr);
+                    activity.runOnUiThread(() -> {
+                        // Actualiza el color de fondo
+                        this.backgroundColor = color;
+                        setBackgroundColor(color);
+                        callbackContext.success();
+                    });
+                } catch (Exception e) {
+                    callbackContext.error("Invalid color format. Use #RRGGBB or #AARRGGBB format.");
+                }
+                return true;
+            }
             case "enable": {
                 // Obtiene las opciones de configuración
                 JSONObject opts = args.optJSONObject(0);
