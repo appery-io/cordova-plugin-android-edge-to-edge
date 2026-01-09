@@ -9,7 +9,7 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
 
 ## Usage in Cordova applications
 ```js
-document.addEventListener('deviceready', async () => {
+window.document.addEventListener('deviceready', async () => {
   await AndroidEdgeToEdge.enable({ 
     lightStatusBar: true, 
     lightNavigationBar: true,
@@ -21,7 +21,7 @@ document.addEventListener('deviceready', async () => {
     ]
   });
   
-  AndroidEdgeToEdge.subscribeInsets(({ top, bottom, left, right }) => {
+  window.AndroidEdgeToEdge.subscribeInsets(({ top, bottom, left, right }) => {
     const toolbar = document.querySelector('.app-toolbar');
     const bottomBar = document.querySelector('.app-bottom-bar');
     if (toolbar) toolbar.style.paddingTop = `calc(var(--toolbar, 0px) + ${top}px)`;
