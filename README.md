@@ -7,10 +7,10 @@ Edge-to-edge support for **Android 15 (API 35)** in Cordova (Cordova Android 10+
 cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
 ```
 
-## Usage in Cordova applications
+## Sample Code, it is recommended to add it into app constructor into section this.platform.ready().then(() => { 
 ```js
-window.document.addEventListener('deviceready', async () => {
-  await AndroidEdgeToEdge.enable({ 
+
+  await window.AndroidEdgeToEdge.enable({ 
     lightStatusBar: true, 
     lightNavigationBar: true,
     backgroundColor: '#FFFFFF',
@@ -39,7 +39,7 @@ window.document.addEventListener('deviceready', async () => {
   
   // If you need to change the background color dynamically:
   // await AndroidEdgeToEdge.setBackgroundColor('#000000');
-});
+
 ```
 
 ## Key Features
