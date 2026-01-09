@@ -22,8 +22,8 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
   });
   
   window.AndroidEdgeToEdge.subscribeInsets(({ top, bottom, left, right }) => {
-    const toolbar = document.querySelector('.app-toolbar');
-    const bottomBar = document.querySelector('.app-bottom-bar');
+    const toolbar: any = document.querySelector('.app-toolbar');
+    const bottomBar: any = document.querySelector('.app-bottom-bar');
     if (toolbar) toolbar.style.paddingTop = `calc(var(--toolbar, 0px) + ${top}px)`;
     if (bottomBar) bottomBar.style.paddingBottom = `calc(var(--bottombar, 0px) + ${bottom}px)`;
     
