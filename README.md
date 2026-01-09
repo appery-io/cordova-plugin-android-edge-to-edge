@@ -35,10 +35,10 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
   });
   
   // When you need to disable edge-to-edge mode:
-  // await AndroidEdgeToEdge.disable();
+  // await window.AndroidEdgeToEdge.disable();
   
   // If you need to change the background color dynamically:
-  // await AndroidEdgeToEdge.setBackgroundColor('#000000');
+  // await window.AndroidEdgeToEdge.setBackgroundColor('#000000');
 
 ```
 
