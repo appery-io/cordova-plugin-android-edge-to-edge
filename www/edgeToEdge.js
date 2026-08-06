@@ -38,7 +38,7 @@ var AndroidEdgeToEdge = {
   },
   
   /**
-   * Obtiene los valores actuales de insets del sistema
+   * Obtiene los valores actuales de insets del sistema (CSS pixels)
    * @returns {Promise<{top: number, bottom: number, left: number, right: number}>} Promesa que se resuelve con los valores de insets
    */
   getInsets: function () {
@@ -49,12 +49,12 @@ var AndroidEdgeToEdge = {
   
   /**
    * Suscribe a cambios en los insets del sistema
-   * @param {Function} cb - Función de callback que recibe los valores de insets actualizados
+   * @param {Function} cb - Función de callback que recibe los valores de insets actualizados (CSS pixels)
    * @param {Object} cb.insets - Objeto con los valores de insets
-   * @param {number} cb.insets.top - Altura en píxeles del inset superior (barra de estado)
-   * @param {number} cb.insets.bottom - Altura en píxeles del inset inferior (barra de navegación)
-   * @param {number} cb.insets.left - Ancho en píxeles del inset izquierdo
-   * @param {number} cb.insets.right - Ancho en píxeles del inset derecho
+   * @param {number} cb.insets.top - Altura en CSS px del inset superior (barra de estado)
+   * @param {number} cb.insets.bottom - Altura en CSS px del inset inferior (barra de navegación)
+   * @param {number} cb.insets.left - Ancho en CSS px del inset izquierdo
+   * @param {number} cb.insets.right - Ancho en CSS px del inset derecho
    */
   subscribeInsets: function (cb) {
     exec(function (data) {

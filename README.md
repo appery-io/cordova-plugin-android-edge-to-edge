@@ -44,13 +44,23 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
 
 ## Key Features
 
-- **Automatic Margin Handling**: Automatically applies margins to WebView based on system insets
+- **Cordova Android 14+/15 compatible**: Does not fight CordovaActivity WebView margins (avoids oversized Ionic `ion-tab-bar` on Android 16 / Samsung One UI)
+- **Ionic safe areas**: Sets `--ion-safe-area-*` correctly (0 when Cordova already inset the WebView)
 - **Full Edge-to-Edge Support**: Makes status and navigation bars transparent
 - **Keyboard Support**: Handles virtual keyboard appearance and disappearance
-- **CSS Variables**: Exposes insets as CSS variables for easy styling
+- **CSS Variables**: Exposes insets as CSS variables (`--cordova-safe-area-inset-*`, `--ion-safe-area-*`) in CSS pixels
 - **Cutout Support**: Handles display cutouts (notches) properly
 - **Callback API**: Notifies your app when insets change
 - **Plugin Compatibility**: Option to ignore specific packages that might conflict
+
+## Cordova Android 15+ note
+
+Cordova Android 14+/15 applies system-bar margins to the WebView when preference `AndroidEdgeToEdge` is **false** (default). In that mode this plugin:
+
+1. Leaves those margins alone
+2. Forces `--ion-safe-area-*` to `0px` so Ionic does not double-pad (`ion-tab-bar`, headers, etc.)
+
+If you set `<preference name="AndroidEdgeToEdge" value="true" />`, Cordova does not pad the WebView; this plugin then sets `--ion-safe-area-*` from system insets so Ionic can pad UI itself.
 
 ## API Reference
 
@@ -104,7 +114,7 @@ Changes the background color of the WebView container.
 
 ### CSS Variables
 
-The plugin automatically sets the following CSS variables that you can use in your stylesheets:
+The plugin automatically sets the following CSS variables (values are **CSS pixels**):
 
 ```css
 :root {
@@ -112,6 +122,10 @@ The plugin automatically sets the following CSS variables that you can use in yo
   --cordova-safe-area-inset-bottom: 0px;
   --cordova-safe-area-inset-left: 0px;
   --cordova-safe-area-inset-right: 0px;
+  --ion-safe-area-top: 0px;
+  --ion-safe-area-bottom: 0px;
+  --ion-safe-area-left: 0px;
+  --ion-safe-area-right: 0px;
 }
 ```
 
@@ -119,7 +133,9 @@ The plugin automatically sets the following CSS variables that you can use in yo
 
 If you experience issues with the plugin:
 
-1. Make sure you're using Cordova Android 10 or higher
-2. Try calling `checkInsets()` after UI changes or orientation changes
-3. For plugins that launch their own activities (like camera), add them to the `ignoredPackages` option
-4. If you're using a custom WebView implementation, make sure it's compatible with WindowInsets API
+1. Make sure you're using Cordova Android 10 or higher (Cordova Android 14+/15 recommended)
+2. **Oversized Ionic tab bar on Android 16 / Samsung tablets**: use this plugin ≥ 1.1.4 — older versions overwrote Cordova WebView margins and left `--ion-safe-area-bottom` too large
+3. Try calling `checkInsets()` after UI changes or orientation changes
+4. For plugins that launch their own activities (like camera), add them to the `ignoredPackages` option
+5. If you're using a custom WebView implementation, make sure it's compatible with WindowInsets API
+6. Do not also manually pad `ion-tab-bar` with `--cordova-safe-area-inset-bottom` when Cordova already owns system-bar insets (default)
