@@ -10,7 +10,7 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
 ## Sample Code, it is recommended to add it into app constructor into section this.platform.ready().then(() => { 
 ```js
 
-  await window.AndroidEdgeToEdge.enable({ 
+  await window.AndroidEdgeToEdge?.enable({ 
     lightStatusBar: true, 
     lightNavigationBar: true,
     backgroundColor: '#FFFFFF',
@@ -21,7 +21,7 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
     ]
   });
   
-  window.AndroidEdgeToEdge.subscribeInsets(({ top, bottom, left, right }) => {
+  window.AndroidEdgeToEdge?.subscribeInsets(({ top, bottom, left, right }) => {
     const toolbar: any = document.querySelector('.app-toolbar');
     const bottomBar: any = document.querySelector('.app-bottom-bar');
     if (toolbar) toolbar.style.paddingTop = `calc(var(--toolbar, 0px) + ${top}px)`;
@@ -35,10 +35,10 @@ cordova plugin add @squareetlabs/cordova-plugin-android-edge-to-edge
   });
   
   // When you need to disable edge-to-edge mode:
-  // await window.AndroidEdgeToEdge.disable();
+  // await window.AndroidEdgeToEdge?.disable();
   
   // If you need to change the background color dynamically:
-  // await window.AndroidEdgeToEdge.setBackgroundColor('#000000');
+  // await window.AndroidEdgeToEdge?.setBackgroundColor('#000000');
 
 ```
 
